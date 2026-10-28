@@ -8,7 +8,9 @@ function first(...keys: string[]): string | undefined {
 const railwayDomain = env.RAILWAY_PUBLIC_DOMAIN ? `https://${env.RAILWAY_PUBLIC_DOMAIN}` : undefined;
 
 export const config = {
-  production: env.NODE_ENV === 'production',
+  // Auf Railway gilt immer Produktion (HTTPS, sichere Cookies). NODE_ENV bewusst nicht setzen,
+  // sonst lässt npm beim Build die devDependencies (Vite, TypeScript) weg.
+  production: env.NODE_ENV === 'production' || Boolean(env.RAILWAY_ENVIRONMENT_ID),
   port: Number(env.PORT ?? 3000),
   host: env.HOST ?? '0.0.0.0',
   databaseUrl: env.DATABASE_URL ?? 'postgres://postgres@localhost:5432/lapis',

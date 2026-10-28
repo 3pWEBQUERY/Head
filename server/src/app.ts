@@ -100,6 +100,7 @@ export async function buildApp(opts: FastifyServerOptions = {}) {
     });
     app.get('/*', async (req, reply) => {
       const rel = (req.params as { '*': string })['*'];
+      if (rel.startsWith('api/') || rel.startsWith('media/')) return reply.code(404).send({ error: 'Nicht gefunden', code: 'not_found' });
       if (rel && !rel.endsWith('/') && existsSync(path.join(webRoot, rel)) && path.resolve(webRoot, rel).startsWith(webRoot + path.sep)) {
         return reply.sendFile(rel);
       }

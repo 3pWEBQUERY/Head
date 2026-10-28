@@ -181,6 +181,9 @@ describe('Lapis API', () => {
     const sealed = await call('GET', `/api/posts/${cap.json.id}`, { token: cleo });
     assert.equal(sealed.json.post.sealed, true);
     assert.equal(sealed.json.post.body, '');
+    // Versiegelt heisst auch: nicht überschreibbar (der Inhalt ist ja verborgen).
+    const overwrite = await call('PATCH', `/api/posts/${cap.json.id}`, { token: cleo, body: { kind: 'brief', body: '', visibility: 'private' } });
+    assert.equal(overwrite.status, 403);
     await pool.query(`update posts set unlock_at = now() - interval '1 minute' where id = $1`, [cap.json.id]);
     const n = await call('GET', '/api/notifications', { token: cleo });
     assert.ok(n.json.notifications.some((x: any) => x.type === 'capsule' && x.post.id === cap.json.id));
@@ -239,6 +242,9 @@ describe('Lapis API', () => {
     const img = await app.inject({ method: 'GET', url });
     assert.equal(img.statusCode, 200);
     assert.equal(img.headers['content-type'], 'image/webp');
-    assert.equal((await app.inject({ method: 'GET', url: '/media/../../etc/passwd' })).statusCode, 404);
+    const trav = await app.inject({ method: 'GET', url: '/media/..%2F..%2F..%2Fetc%2Fpasswd' });
+    assert.equal(trav.statusCode, 404);
+    assert.ok(!trav.body.includes('root:'));
+    assert.equal((await app.inject({ method: 'GET', url: '/api/gibt-es-nicht' })).statusCode, 404);
   });
 });

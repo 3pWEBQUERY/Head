@@ -193,9 +193,11 @@ export default async function postRoutes(app: FastifyInstance) {
   app.patch('/api/posts/:id', async (req) => {
     const me = requireUser(req);
     const { id } = parse(z.object({ id: z.coerce.number().int().positive() }), req.params);
-    const existing = await one('select id, author_id, status from posts where id = $1', [id]);
+    const existing = await one('select id, author_id, status, unlock_at > now() as sealed from posts where id = $1', [id]);
     if (!existing) throw notFound();
     if (existing.author_id !== me.id) throw forbidden();
+    // Der Inhalt einer versiegelten Kapsel wird nie ausgeliefert – überschreiben würde ihn löschen.
+    if (existing.sealed) throw forbidden('Eine versiegelte Zeitkapsel lässt sich erst nach dem Öffnen bearbeiten');
     const { v, roomId } = await resolveInput(parse(postInput, req.body), me.id);
     if (v.continuesPostId === id) throw badRequest('Ein Text kann sich nicht selbst fortsetzen');
     const firstPublish = v.publish && existing.status === 'draft';
