@@ -7,7 +7,7 @@ export default defineRailway(() => {
   const media = bucket('lapis-media', { region: 'ams' });
 
   const web = service('lapis', {
-    source: github('3pwebquery/head', { branch: 'main' }),
+    source: github('3pWEBQUERY/Head', { branch: 'main' }),
     build: 'npm run build',
     start: 'npm start',
     healthcheck: '/api/health',
