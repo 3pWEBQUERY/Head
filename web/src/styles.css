@@ -461,11 +461,51 @@ img { max-width: 100%; display: block; }
 .paper .prompt-ref button, .paper .cont-ref button { margin-left: auto; }
 .paper input.title { border: 0; outline: none; background: none; font: 600 clamp(26px, 4vw, 36px)/1.2 var(--serif); letter-spacing: -.02em; padding: 0; width: 100%; }
 .paper input.title::placeholder, .paper textarea::placeholder { color: var(--ink-3); opacity: .7; }
-.paper textarea.body { border: 0; outline: none; background: none; resize: none; padding: 0; width: 100%; min-height: 50vh; font: 400 19px/1.78 var(--serif); field-sizing: content; overflow: hidden; }
+/* WYSIWYG-Editor (Tiptap): sieht aus wie die Leseansicht */
+.paper-editor-wrap { width: 100%; }
+.paper-editor { outline: none; min-height: 50vh; padding-bottom: 24px; caret-color: var(--accent); }
+.paper-editor > *:last-child { margin-bottom: 0; }
+.paper-editor p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: var(--ink-3); opacity: .7; }
+.paper-editor hr { border: 0; margin: 1.6em 0; text-align: center; overflow: visible; height: auto; cursor: pointer; }
+.paper-editor hr::after { content: "· · ·"; color: var(--ink-3); letter-spacing: .6em; font: 14px var(--mono); }
+.paper-editor hr.ProseMirror-selectednode { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 6px; border-radius: 6px; }
+.paper-editor blockquote p { margin: 0; }
+.paper-editor ::selection { background: color-mix(in srgb, var(--up) 22%, transparent); }
+
+/* Feste Formatierungsleiste unten, folgt dem Scrollen und hebt sich über die Bildschirmtastatur */
+.format-bar {
+  position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); z-index: 40;
+  background: color-mix(in srgb, var(--bg) 90%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line); padding-bottom: var(--safe-bottom);
+}
+.format-bar-in {
+  max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 48px;
+  padding: 0 max(16px, env(safe-area-inset-left, 0px));
+}
+.format-tools { width: 100%; max-width: 680px; justify-self: center; height: 54px; display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.format-tools::-webkit-scrollbar { display: none; }
+.format-btn { width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px; display: grid; place-items: center; color: var(--ink-2); font-size: 16px; line-height: 1; transition: background-color .12s, color .12s; }
+.format-btn:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
+.format-btn[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
+.format-btn:disabled { opacity: .3; }
+.format-sep { width: 1px; height: 20px; flex-shrink: 0; background: var(--line-2); margin: 0 6px; }
+.format-info { margin-left: auto; padding-left: 12px; white-space: nowrap; font: 500 12px var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.mood-group { display: flex; flex-direction: column; gap: 2px; }
+.mood-group + .mood-group { margin-top: 4px; }
+.mood-group-label { font-size: 11.5px; color: var(--ink-3); padding-left: 2px; }
+.moods-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; mask-image: linear-gradient(90deg, #000 92%, transparent); }
+.moods-row::-webkit-scrollbar { display: none; }
+.moods-row .mood-btn { flex-shrink: 0; }
 .paper .cover { position: relative; }
 .paper .cover .icon-btn { position: absolute; top: 10px; right: 10px; background: color-mix(in srgb, var(--surface) 85%, transparent); }
 .editor-kinds { display: flex; gap: 6px; flex-wrap: wrap; }
-.panel { position: sticky; top: calc(84px + var(--safe-top)); align-self: start; display: flex; flex-direction: column; gap: 18px; }
+.panel {
+  position: sticky; top: calc(84px + var(--safe-top)); align-self: start; display: flex; flex-direction: column; gap: 18px;
+  /* Bis über die Formatierungsleiste scrollbar, damit nichts dahinter verschwindet */
+  max-height: calc(100dvh - 84px - 54px - 24px - var(--safe-top) - var(--safe-bottom)); overflow-y: auto; scrollbar-width: thin;
+  margin-right: -8px; padding-right: 8px;
+}
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field > .label { display: flex; align-items: center; justify-content: space-between; }
 .field .help { font-size: 12.5px; color: var(--ink-3); margin: 0; }
@@ -476,9 +516,18 @@ img { max-width: 100%; display: block; }
 .textarea { height: auto; min-height: 90px; padding: 10px 12px; resize: vertical; line-height: 1.5; }
 .input:focus, .textarea:focus { border-color: var(--ink-3); }
 .options { display: flex; flex-direction: column; gap: 4px; }
-.option { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); text-align: left; transition: border-color .15s; }
+.option {
+  position: relative; display: flex; gap: 10px; align-items: flex-start; padding: 10px 40px 10px 12px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--surface); text-align: left; transition: border-color .15s, background-color .15s;
+}
 .option:hover { border-color: var(--line-2); }
-.option[aria-checked="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+/* Auswahl: dünner, heller Rahmen plus Radio-Punkt statt dickem dunklem Rand */
+.option[aria-checked="true"] { border-color: color-mix(in srgb, var(--ink) 22%, var(--line)); background: color-mix(in srgb, var(--raised) 55%, var(--surface)); }
+.option::after {
+  content: ""; position: absolute; right: 14px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%;
+  border: 1px solid var(--line-2); background: var(--surface); transition: border-color .15s, border-width .15s;
+}
+.option[aria-checked="true"]::after { border: 5px solid var(--accent); }
 .option .o-t { display: flex; flex-direction: column; font-size: 14px; line-height: 1.35; }
 .option .o-t b { font-weight: 600; }
 .option .o-t span { color: var(--ink-3); font-size: 12.5px; }
@@ -687,6 +736,7 @@ a.rcard-latest:hover { background: color-mix(in srgb, var(--rc) 9%, var(--raised
   .top-in { grid-template-columns: auto minmax(0, 1fr) auto; }
   .left { display: none; }
   .editor-body { grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; }
+  .format-bar-in { grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; }
 }
 @media (max-width: 900px) {
   :root { --tabbar: 62px; }
@@ -706,8 +756,9 @@ a.rcard-latest:hover { background: color-mix(in srgb, var(--rc) 9%, var(--raised
   .tabbar a .badge { top: 6px; right: calc(50% - 18px); }
   .tabbar .write { align-self: center; justify-self: center; width: 48px; height: 40px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); flex-direction: row; }
   .editor-body { grid-template-columns: minmax(0, 1fr); padding-top: 24px; }
+  .format-bar-in { grid-template-columns: minmax(0, 1fr); }
   .panel {
-    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 45; max-height: 82dvh; overflow-y: auto;
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 45; max-height: 82dvh; overflow-y: auto; margin: 0;
     background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 20px calc(24px + var(--safe-bottom)); box-shadow: var(--shadow);
     transform: translateY(105%); transition: transform .3s cubic-bezier(.2, .7, .2, 1);
   }
@@ -753,4 +804,6 @@ a.rcard-latest:hover { background: color-mix(in srgb, var(--rc) 9%, var(--raised
   .hide-xs { display: none; }
   .editor-top-in { gap: 6px; }
   .editor-top .btn { padding: 0 14px; }
+  .format-btn { width: 36px; }
+  .format-sep { margin: 0 3px; }
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { countWords, KINDS, KIND_KEYS, MOODS, type Kind, type Mood, type Visibility } from '../../../shared/constants';
+import { countWords, KINDS, KIND_KEYS, MOOD_ORDER, MOODS, type Kind, type Mood, type Visibility } from '../../../shared/constants';
 import { api } from '../api';
 import { useMe, useOverview, useRooms } from '../lib/queries';
 import { useToast } from '../lib/toast';
@@ -90,9 +90,9 @@ export function Composer({ room: fixedRoom, defaultKind = 'moment' }: { room?: s
               </button>
             ))}
           </div>
-          <div className="moods" role="radiogroup" aria-label="Stimmung">
+          <div className="moods moods-row" role="radiogroup" aria-label="Stimmung">
             <span className="hint" style={{ marginRight: 4 }}>Stimmung</span>
-            {([1, 2, 3, 4, 5] as Mood[]).map((m) => (
+            {MOOD_ORDER.map((m) => (
               <button key={m} type="button" className="mood-btn" role="radio" aria-checked={mood === m} aria-pressed={mood === m} onClick={() => setMood(mood === m ? null : m)}>
                 <i className="mood-dot" style={{ ['--mc' as any]: MOODS[m].color }} />{MOODS[m].label}
               </button>

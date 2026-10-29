@@ -11,15 +11,36 @@ export const KINDS = {
 export type Kind = keyof typeof KINDS;
 export const KIND_KEYS = Object.keys(KINDS) as Kind[];
 
-// Stimmung: bewusst Worte statt Emojis. 1 = schwer … 5 = hell.
+// Stimmung: bewusst Worte statt Emojis. Die IDs 1–5 sind die ursprünglichen,
+// neue kommen hinten dazu, damit bestehende Texte ihre Stimmung behalten.
 export const MOODS = {
   1: { label: 'schwer', color: '#213885' },
   2: { label: 'grau', color: '#868896' },
   3: { label: 'ruhig', color: '#9A8C7A' },
   4: { label: 'gut', color: '#B0567E' },
   5: { label: 'hell', color: '#E6AE2C' },
+  6: { label: 'traurig', color: '#4A68C2' },
+  7: { label: 'müde', color: '#6F7390' },
+  8: { label: 'wütend', color: '#B23A3A' },
+  9: { label: 'unruhig', color: '#C27A2C' },
+  10: { label: 'einsam', color: '#5A5E7A' },
+  11: { label: 'nachdenklich', color: '#5F3475' },
+  12: { label: 'dankbar', color: '#3FA874' },
+  13: { label: 'erleichtert', color: '#6CB4A8' },
+  14: { label: 'verliebt', color: '#D45B8A' },
+  15: { label: 'stolz', color: '#893172' },
+  16: { label: 'aufgeregt', color: '#F0A23B' },
 } as const;
-export type Mood = 1 | 2 | 3 | 4 | 5;
+export type Mood = keyof typeof MOODS;
+export const MOOD_MAX = 16;
+
+/** Anzeige von schwer nach hell, in drei Gruppen. */
+export const MOOD_GROUPS: { label: string; moods: Mood[] }[] = [
+  { label: 'Schwer', moods: [1, 6, 10, 8, 9] },
+  { label: 'Dazwischen', moods: [7, 2, 3, 11, 13] },
+  { label: 'Hell', moods: [12, 4, 14, 15, 16, 5] },
+];
+export const MOOD_ORDER: Mood[] = MOOD_GROUPS.flatMap((g) => g.moods);
 
 // Resonanz statt Upvotes. Kein Daumen runter: hier wird nichts weggestimmt.
 export const RESONANCE = {

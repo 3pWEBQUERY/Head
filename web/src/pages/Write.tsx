@@ -2,9 +2,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
-import { countWords, KINDS, KIND_KEYS, MOODS, RESPONSE_MODES, VISIBILITY, WORDS_PER_MINUTE, type Kind, type Mood, type ResponseMode, type Visibility } from '../../../shared/constants';
+import { countWords, KINDS, KIND_KEYS, MOOD_GROUPS, MOODS, RESPONSE_MODES, VISIBILITY, WORDS_PER_MINUTE, type Kind, type Mood, type ResponseMode, type Visibility } from '../../../shared/constants';
 import { api, ApiError } from '../api';
+import type { Editor as TiptapEditor } from '@tiptap/react';
 import { Spinner, Switch, ThemeToggle } from '../components/bits';
+import { FormatBar, RichEditor } from '../components/RichEditor';
 import { IBack, IClose, IContinue, IEye, IGear, IImage, ILock, IMask, IUsers } from '../components/Icons';
 import { useOnline } from '../components/Layout';
 import { ago } from '../lib/format';
@@ -108,6 +110,7 @@ function Editor({ initialId, post }: { initialId: number | null; post: Post | nu
   const [err, setErr] = useState('');
   const [panel, setPanel] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [editor, setEditor] = useState<TiptapEditor | null>(null);
   const [, tick] = useState(0);
   const saving = useRef<Promise<number | null> | null>(null);
   const latest = useRef(d);
@@ -214,7 +217,6 @@ function Editor({ initialId, post }: { initialId: number | null; post: Post | nu
           <button type="button" className="icon-btn" aria-label="Zurück" onClick={async () => { if (status === 'dirty' && !published) await saveDraft(); history.length > 1 ? navigate(-1) : navigate('/'); }}><IBack /></button>
           <span className="status" role="status"><i className={`dot${status === 'saving' || status === 'dirty' ? ' pending' : ''}${!online || status === 'error' ? ' off' : ''}`} />{statusText}</span>
           <span className="grow" />
-          <span className="hint hide-sm">{words} Wörter · {minutes} Min.</span>
           <span className="hide-xs"><ThemeToggle /></span>
           <button type="button" className="icon-btn panel-toggle" aria-label="Einstellungen" onClick={() => setPanel(true)}><IGear /></button>
           <button type="button" className="btn btn-primary" disabled={busy} onClick={publish}>{actionLabel}</button>
@@ -246,15 +248,18 @@ function Editor({ initialId, post }: { initialId: number | null; post: Post | nu
             </div>
           )}
           <input className="title" value={d.title} maxLength={140} onChange={(e) => set('title', e.target.value)}
+            onKeyDown={(e) => {
+              // Fokus sofort setzen (nicht verzögert), damit schnell getippte Zeichen nicht im Titel landen.
+              if (e.key === 'Enter' && editor) { e.preventDefault(); editor.view.focus(); editor.commands.setTextSelection(1); }
+            }}
             placeholder={d.kind === 'moment' || d.kind === 'gedanke' ? 'Titel (optional)' : 'Titel'} aria-label="Titel" />
-          <textarea className="body" value={d.body} onChange={(e) => set('body', e.target.value)} autoFocus={!post}
-            placeholder={placeholderFor(d.kind)} aria-label="Text" spellCheck />
-          <p className="hint">*kursiv* · **fett** · &gt; Zitat · *** Szenenwechsel</p>
+          <RichEditor value={d.body} onChange={(text) => set('body', text)} autoFocus={!post} placeholder={placeholderFor(d.kind)} onReady={setEditor} />
           {err && <div className="form-error" role="alert">{err}</div>}
         </div>
 
         <Panel d={d} set={set} setD={setD} rooms={rooms.data ?? []} open={panel} onClose={() => setPanel(false)} upload={upload} />
       </div>
+      <FormatBar editor={editor} info={<>{words} {words === 1 ? 'Wort' : 'Wörter'}<span className="hide-xs"> · {minutes} Min.</span></>} />
     </div>
   );
 }
@@ -328,13 +333,18 @@ function Panel({ d, set, setD, rooms, open, onClose, upload }: {
 
       <div className="field">
         <span className="label">Stimmung</span>
-        <div className="moods">
-          {([1, 2, 3, 4, 5] as Mood[]).map((m) => (
-            <button key={m} type="button" className="mood-btn" aria-pressed={d.mood === m} onClick={() => set('mood', d.mood === m ? null : m)}>
-              <i className="mood-dot" style={{ ['--mc' as any]: MOODS[m].color }} />{MOODS[m].label}
-            </button>
-          ))}
-        </div>
+        {MOOD_GROUPS.map((g) => (
+          <div key={g.label} className="mood-group" role="group" aria-label={g.label}>
+            <span className="mood-group-label">{g.label}</span>
+            <div className="moods">
+              {g.moods.map((m) => (
+                <button key={m} type="button" className="mood-btn" aria-pressed={d.mood === m} onClick={() => set('mood', d.mood === m ? null : m)}>
+                  <i className="mood-dot" style={{ ['--mc' as any]: MOODS[m].color }} />{MOODS[m].label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {d.visibility !== 'private' && (
