@@ -28,6 +28,11 @@ export const config = {
   uploadDir: env.UPLOAD_DIR ?? '.uploads',
   maxUploadBytes: Number(env.MAX_UPLOAD_MB ?? 12) * 1024 * 1024,
   trustProxy: env.TRUST_PROXY !== 'false',
+  // E-Mail über die HTTP-API von Resend (Railway erlaubt SMTP erst ab dem Pro-Plan).
+  mail: {
+    resendKey: env.RESEND_API_KEY,
+    from: env.MAIL_FROM ?? 'Lapis <onboarding@resend.dev>',
+  },
 };
 
 export const hasBucket = Boolean(config.bucket.name && config.bucket.accessKeyId && config.bucket.secretAccessKey);

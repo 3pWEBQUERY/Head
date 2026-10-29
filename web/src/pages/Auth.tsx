@@ -5,6 +5,7 @@ import { api } from '../api';
 import { BrandMark } from '../components/Icons';
 import { Shell } from '../components/Layout';
 import { useMe } from '../lib/queries';
+import { useToast } from '../lib/toast';
 import type { Me } from '../types';
 
 const QUOTES = [
@@ -59,7 +60,11 @@ export function Login() {
         <p className="sub">Schön, dass du wieder da bist.</p>
         <div className="field"><label className="label" htmlFor="login">E-Mail oder Name</label>
           <input id="login" className="input" autoComplete="username" value={login} onChange={(e) => setLogin(e.target.value)} required autoFocus /></div>
-        <div className="field"><label className="label" htmlFor="pw">Passwort</label>
+        <div className="field">
+          <div className="label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <label htmlFor="pw">Passwort</label>
+            <Link to={`/passwort-vergessen${login.includes('@') ? `?email=${encodeURIComponent(login)}` : ''}`} className="label-link">Vergessen?</Link>
+          </div>
           <input id="pw" className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
         {m.error && <div className="form-error" role="alert">{(m.error as Error).message}</div>}
         <button className="btn btn-primary btn-lg" type="submit" disabled={m.isPending}>Anmelden</button>
@@ -108,6 +113,70 @@ export function Register() {
         {m.error && <div className="form-error" role="alert">{(m.error as Error).message}</div>}
         <button className="btn btn-primary btn-lg" type="submit" disabled={m.isPending || !agree}>Konto erstellen</button>
         <p className="alt">Schon dabei? <Link to="/anmelden">Anmelden</Link></p>
+      </form>
+    </AuthFrame>
+  );
+}
+
+export function ForgotPassword() {
+  const [params] = useSearchParams();
+  const [email, setEmail] = useState(params.get('email') ?? '');
+  const m = useMutation({ mutationFn: () => api('/api/auth/forgot', { body: { email } }) });
+  return (
+    <AuthFrame>
+      {m.isSuccess ? (
+        <form onSubmit={(e) => e.preventDefault()}>
+          <Link className="brand hide-lg" to="/"><BrandMark /> Lapis</Link>
+          <h1>Schau in dein Postfach</h1>
+          <p className="sub">Wenn es zu <b>{email}</b> ein Konto gibt, ist ein Link unterwegs. Er gilt eine Stunde.</p>
+          <p className="note">Nichts angekommen? Sieh im Spam-Ordner nach oder <button type="button" className="label-link" onClick={() => m.reset()}>versuch es noch einmal</button>.</p>
+          <p className="alt"><Link to="/anmelden">Zurück zur Anmeldung</Link></p>
+        </form>
+      ) : (
+        <form onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
+          <Link className="brand hide-lg" to="/"><BrandMark /> Lapis</Link>
+          <h1>Passwort vergessen?</h1>
+          <p className="sub">Passiert. Gib deine E-Mail-Adresse ein, wir schicken dir einen Link für ein neues.</p>
+          <div className="field"><label className="label" htmlFor="email">E-Mail</label>
+            <input id="email" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus /></div>
+          {m.error && <div className="form-error" role="alert">{(m.error as Error).message}</div>}
+          <button className="btn btn-primary btn-lg" type="submit" disabled={m.isPending}>Link schicken</button>
+          <p className="alt">Doch wieder eingefallen? <Link to="/anmelden">Anmelden</Link></p>
+        </form>
+      )}
+    </AuthFrame>
+  );
+}
+
+export function ResetPassword() {
+  const [params] = useSearchParams();
+  const token = params.get('token') ?? '';
+  const [password, setPassword] = useState('');
+  const [repeat, setRepeat] = useState('');
+  const [mismatch, setMismatch] = useState(false);
+  const done = useAuthDone();
+  const toast = useToast();
+  const m = useMutation({
+    mutationFn: () => api<{ user: Me }>('/api/auth/reset', { body: { token, password } }),
+    onSuccess: (r) => { toast('Neues Passwort gespeichert. Du bist angemeldet.'); done(r.user, '/'); },
+  });
+  const expired = (m.error as any)?.code === 'reset_invalid' || !token;
+  return (
+    <AuthFrame>
+      <form onSubmit={(e) => { e.preventDefault(); if (password !== repeat) return setMismatch(true); m.mutate(); }}>
+        <Link className="brand hide-lg" to="/"><BrandMark /> Lapis</Link>
+        <h1>Neues Passwort</h1>
+        <p className="sub">Danach bist du direkt angemeldet. Auf allen anderen Geräten wirst du abgemeldet.</p>
+        <div className="field"><label className="label" htmlFor="pw">Neues Passwort</label>
+          <input id="pw" className="input" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(e) => { setPassword(e.target.value); setMismatch(false); }} required autoFocus />
+          <p className="help">Mindestens 8 Zeichen.</p></div>
+        <div className="field"><label className="label" htmlFor="pw2">Noch einmal</label>
+          <input id="pw2" className="input" type="password" autoComplete="new-password" minLength={8} value={repeat} onChange={(e) => { setRepeat(e.target.value); setMismatch(false); }} required /></div>
+        {mismatch && <div className="form-error" role="alert">Die beiden Passwörter sind nicht gleich.</div>}
+        {m.error && <div className="form-error" role="alert">{(m.error as Error).message}</div>}
+        {expired && !m.error && <div className="form-error" role="alert">Dieser Link ist unvollständig. Öffne ihn direkt aus der E-Mail.</div>}
+        <button className="btn btn-primary btn-lg" type="submit" disabled={m.isPending || !token}>Passwort speichern</button>
+        {expired && <p className="alt"><Link to="/passwort-vergessen">Neuen Link anfordern</Link></p>}
       </form>
     </AuthFrame>
   );

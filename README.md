@@ -81,7 +81,20 @@ Build `npm run build`, Start `npm start`, Healthcheck `/api/health`. `NODE_ENV` 
 
 Ältere Buckets brauchen eventuell `S3_FORCE_PATH_STYLE=true`. Ob das nötig ist, steht im Credentials-Tab.
 
+### E-Mail („Passwort vergessen“)
+
+Railway erlaubt SMTP erst ab dem Pro-Plan, darum verschickt Lapis über die HTTP-API von [Resend](https://resend.com):
+
+| Variable | Wert |
+|---|---|
+| `RESEND_API_KEY` | API-Schlüssel aus dem Resend-Dashboard |
+| `MAIL_FROM` | Absender, z. B. `Lapis <hallo@deine-domain.ch>` (Domain bei Resend verifizieren) |
+| `PUBLIC_URL` | nur bei eigener Domain nötig, sonst wird `RAILWAY_PUBLIC_DOMAIN` für den Link genutzt |
+
+Ohne Schlüssel werden Reset-Mails lokal in der Konsole ausgegeben; in Produktion wird nur ein Fehler geloggt.
+
 ## Vor dem Livegang
 
+- `RESEND_API_KEY` und `MAIL_FROM` setzen, sonst kommen keine „Passwort vergessen“-Mails an.
 - Datenschutzerklärung, Nutzungsbedingungen und Impressum (`web/src/pages/Static.tsx`) sind Vorlagen und müssen rechtlich geprüft und ergänzt werden.
 - Ein Konto zum Moderator machen: `update users set role = 'admin' where handle = '…';`. Meldungen liegen in der Tabelle `reports`.

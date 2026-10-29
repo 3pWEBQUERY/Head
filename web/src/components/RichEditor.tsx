@@ -74,7 +74,7 @@ const TOOLS: (Tool | 'sep')[] = [
   },
 ];
 
-/** Feste Formatierungsleiste am unteren Rand – auf dem Handy direkt über der Tastatur. */
+/** Schwebende Formatierungsleiste und separate Wortzählung, fest beim Scrollen; auf dem Handy über der Tastatur. */
 export function FormatBar({ editor, info }: { editor: Editor | null; info: ReactNode }) {
   const state = useEditorState({
     editor,
@@ -87,28 +87,30 @@ export function FormatBar({ editor, info }: { editor: Editor | null; info: React
   });
   const ref = useKeyboardOffset();
   return (
-    <div className="format-bar" ref={ref} role="toolbar" aria-label="Formatierung">
-      <div className="format-bar-in">
-        <div className="format-tools">
-          {TOOLS.map((t, i) => t === 'sep'
-            ? <span key={`s${i}`} className="format-sep" aria-hidden="true" />
-            : (
-              <button
-                key={t.key}
-                type="button"
-                className="format-btn"
-                title={t.label}
-                aria-label={t.label}
-                aria-pressed={t.active ? Boolean(state?.[t.key]?.active) : undefined}
-                disabled={!editor || state?.[t.key]?.disabled}
-                // Fokus im Text behalten, sonst springt auf dem Handy die Tastatur weg.
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => editor && t.run(editor)}
-              >
-                {t.icon}
-              </button>
-            ))}
-          <span className="format-info">{info}</span>
+    <div className="format-float" ref={ref}>
+      <div className="format-float-in">
+        <div className="format-dock">
+          <div className="format-pill" role="toolbar" aria-label="Formatierung">
+            {TOOLS.map((t, i) => t === 'sep'
+              ? <span key={`s${i}`} className="format-sep" aria-hidden="true" />
+              : (
+                <button
+                  key={t.key}
+                  type="button"
+                  className="format-btn"
+                  title={t.label}
+                  aria-label={t.label}
+                  aria-pressed={t.active ? Boolean(state?.[t.key]?.active) : undefined}
+                  disabled={!editor || state?.[t.key]?.disabled}
+                  // Fokus im Text behalten, sonst springt auf dem Handy die Tastatur weg.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => editor && t.run(editor)}
+                >
+                  {t.icon}
+                </button>
+              ))}
+          </div>
+          <div className="format-count" aria-live="polite">{info}</div>
         </div>
       </div>
     </div>
