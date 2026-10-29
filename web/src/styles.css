@@ -525,7 +525,8 @@ img { max-width: 100%; display: block; }
   content: ""; position: absolute; right: 14px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%;
   border: 1px solid var(--line-2); background: var(--surface); transition: border-color .15s, border-width .15s;
 }
-.option[aria-checked="true"]::after { border: 5px solid var(--accent); }
+/* Feiner Ring mit kleinem Kern statt dickem Rand */
+.option[aria-checked="true"]::after { border: 1.5px solid var(--accent); background: radial-gradient(circle, var(--accent) 0 3.5px, var(--surface) 4px); }
 .option .o-t { display: flex; flex-direction: column; font-size: 14px; line-height: 1.35; }
 .option .o-t b { font-weight: 600; }
 .option .o-t span { color: var(--ink-3); font-size: 12.5px; }
