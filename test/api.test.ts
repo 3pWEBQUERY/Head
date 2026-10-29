@@ -7,6 +7,7 @@ process.env.UPLOAD_DIR = '.uploads-test';
 const { pool } = await import('../server/src/db.js');
 const { migrate } = await import('../server/src/migrate.js');
 const { buildApp } = await import('../server/src/app.js');
+const { outbox } = await import('../server/src/lib/mail.js');
 
 type App = Awaited<ReturnType<typeof buildApp>>;
 let app: App;
@@ -233,6 +234,40 @@ describe('Lapis API', () => {
     assert.equal((await call('DELETE', '/api/auth/account', { token: cleo, body: { password: 'falsch' } })).status, 400);
     assert.equal((await call('DELETE', '/api/auth/account', { token: cleo, body: { password: 'geheim1234' } })).status, 200);
     assert.equal((await call('GET', '/api/auth/me', { token: cleo })).json.user, null);
+  });
+
+  test('Passwort vergessen: Link per Mail, einmalig, meldet überall ab', async () => {
+    const before = outbox.length;
+    const old = await call('POST', '/api/auth/login', { body: { login: 'ben', password: 'geheim1234', native: true } });
+    const unknown = await call('POST', '/api/auth/forgot', { body: { email: 'gibts-nicht@example.com' } });
+    const known = await call('POST', '/api/auth/forgot', { body: { email: 'BEN@example.com' } });
+    // Gleiche Antwort, egal ob es das Konto gibt.
+    assert.deepEqual(unknown.json, known.json);
+    await new Promise((r) => setTimeout(r, 20));
+    assert.equal(outbox.length, before + 1);
+    const mail = outbox[outbox.length - 1];
+    assert.equal(mail.to, 'ben@example.com');
+    const token = new URL(mail.text.match(/https?:\/\/\S+/)![0]).searchParams.get('token')!;
+    assert.ok(token.length > 30);
+    assert.ok(mail.html.includes('Neues Passwort festlegen'));
+
+    assert.equal((await call('POST', '/api/auth/reset', { body: { token, password: 'kurz' } })).status, 400);
+    const ok = await call('POST', '/api/auth/reset', { body: { token, password: 'neues-passwort-1', native: true } });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.json.user.handle, 'ben');
+    // Link ist verbraucht, alte Sitzung ungültig, neues Passwort funktioniert.
+    assert.equal((await call('POST', '/api/auth/reset', { body: { token, password: 'noch-ein-passwort' } })).json.code, 'reset_invalid');
+    assert.equal((await call('GET', '/api/auth/me', { token: old.json.token })).json.user, null);
+    assert.equal((await call('GET', '/api/auth/me', { token: ok.json.token })).json.user.handle, 'ben');
+    assert.equal((await call('POST', '/api/auth/login', { body: { login: 'ben', password: 'geheim1234' } })).status, 401);
+    ben = ok.json.token;
+
+    // Abgelaufene Links gelten nicht.
+    await call('POST', '/api/auth/forgot', { body: { email: 'ana@example.com' } });
+    await new Promise((r) => setTimeout(r, 20));
+    const t2 = new URL(outbox[outbox.length - 1].text.match(/https?:\/\/\S+/)![0]).searchParams.get('token')!;
+    await pool.query("update password_resets set expires_at = now() - interval '1 minute'");
+    assert.equal((await call('POST', '/api/auth/reset', { body: { token: t2, password: 'egal-egal-1' } })).json.code, 'reset_invalid');
   });
 
   test('Bild-Upload wird zu WebP ohne Metadaten', async () => {

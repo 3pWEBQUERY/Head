@@ -472,24 +472,26 @@ img { max-width: 100%; display: block; }
 .paper-editor blockquote p { margin: 0; }
 .paper-editor ::selection { background: color-mix(in srgb, var(--up) 22%, transparent); }
 
-/* Feste Formatierungsleiste unten, folgt dem Scrollen und hebt sich über die Bildschirmtastatur */
-.format-bar {
-  position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); z-index: 40;
-  background: color-mix(in srgb, var(--bg) 90%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-  border-top: 1px solid var(--line); padding-bottom: var(--safe-bottom);
-}
-.format-bar-in {
+/* Schwebende Formatierungsleiste + separate Wortzählung, fest beim Scrollen, mittig über dem Text */
+.format-float { position: fixed; left: 0; right: 0; bottom: calc(18px + var(--safe-bottom) + var(--kb, 0px)); z-index: 40; pointer-events: none; }
+.format-float-in {
   max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 48px;
   padding: 0 max(16px, env(safe-area-inset-left, 0px));
 }
-.format-tools { width: 100%; max-width: 680px; justify-self: center; height: 54px; display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; }
-.format-tools::-webkit-scrollbar { display: none; }
+.format-dock { justify-self: center; display: flex; align-items: center; gap: 8px; max-width: 100%; }
+.format-pill, .format-count {
+  pointer-events: auto; background: color-mix(in srgb, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+}
+.format-pill { display: flex; align-items: center; gap: 2px; padding: 4px; overflow-x: auto; scrollbar-width: none; }
+.format-pill::-webkit-scrollbar { display: none; }
+.format-count { height: 46px; display: inline-flex; align-items: center; padding: 0 14px; white-space: nowrap; font: 500 12px var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .format-btn { width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px; display: grid; place-items: center; color: var(--ink-2); font-size: 16px; line-height: 1; transition: background-color .12s, color .12s; }
 .format-btn:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
-.format-btn[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
+.format-btn[aria-pressed="true"] { background: var(--raised); color: var(--ink); }
 .format-btn:disabled { opacity: .3; }
-.format-sep { width: 1px; height: 20px; flex-shrink: 0; background: var(--line-2); margin: 0 6px; }
-.format-info { margin-left: auto; padding-left: 12px; white-space: nowrap; font: 500 12px var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.format-sep { width: 1px; height: 20px; flex-shrink: 0; background: var(--line); margin: 0 4px; }
 
 .mood-group { display: flex; flex-direction: column; gap: 2px; }
 .mood-group + .mood-group { margin-top: 4px; }
@@ -500,12 +502,8 @@ img { max-width: 100%; display: block; }
 .paper .cover { position: relative; }
 .paper .cover .icon-btn { position: absolute; top: 10px; right: 10px; background: color-mix(in srgb, var(--surface) 85%, transparent); }
 .editor-kinds { display: flex; gap: 6px; flex-wrap: wrap; }
-.panel {
-  position: sticky; top: calc(84px + var(--safe-top)); align-self: start; display: flex; flex-direction: column; gap: 18px;
-  /* Bis über die Formatierungsleiste scrollbar, damit nichts dahinter verschwindet */
-  max-height: calc(100dvh - 84px - 54px - 24px - var(--safe-top) - var(--safe-bottom)); overflow-y: auto; scrollbar-width: thin;
-  margin-right: -8px; padding-right: 8px;
-}
+/* Einstellungen scrollen mit der Seite – kein eigener Scrollbereich */
+.panel { align-self: start; display: flex; flex-direction: column; gap: 18px; }
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field > .label { display: flex; align-items: center; justify-content: space-between; }
 .field .help { font-size: 12.5px; color: var(--ink-3); margin: 0; }
@@ -736,7 +734,7 @@ a.rcard-latest:hover { background: color-mix(in srgb, var(--rc) 9%, var(--raised
   .top-in { grid-template-columns: auto minmax(0, 1fr) auto; }
   .left { display: none; }
   .editor-body { grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; }
-  .format-bar-in { grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; }
+  .format-float-in { grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; }
 }
 @media (max-width: 900px) {
   :root { --tabbar: 62px; }
@@ -756,7 +754,7 @@ a.rcard-latest:hover { background: color-mix(in srgb, var(--rc) 9%, var(--raised
   .tabbar a .badge { top: 6px; right: calc(50% - 18px); }
   .tabbar .write { align-self: center; justify-self: center; width: 48px; height: 40px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); flex-direction: row; }
   .editor-body { grid-template-columns: minmax(0, 1fr); padding-top: 24px; }
-  .format-bar-in { grid-template-columns: minmax(0, 1fr); }
+  .format-float-in { grid-template-columns: minmax(0, 1fr); }
   .panel {
     position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 45; max-height: 82dvh; overflow-y: auto; margin: 0;
     background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 20px calc(24px + var(--safe-bottom)); box-shadow: var(--shadow);
@@ -804,6 +802,16 @@ a.rcard-latest:hover { background: color-mix(in srgb, var(--rc) 9%, var(--raised
   .hide-xs { display: none; }
   .editor-top-in { gap: 6px; }
   .editor-top .btn { padding: 0 14px; }
+  .format-float { bottom: calc(12px + var(--safe-bottom) + var(--kb, 0px)); }
+  /* Schmal: Wortzählung als eigene kleine Leiste über der Formatierung, rechtsbündig */
+  .format-dock { flex-direction: column-reverse; align-items: flex-end; gap: 6px; }
+  .format-count { height: 30px; padding: 0 10px; font-size: 11.5px; border-radius: 10px; }
   .format-btn { width: 36px; }
-  .format-sep { margin: 0 3px; }
+  .format-sep { margin: 0 2px; }
 }
+.label-link { text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 500; color: var(--ink-3); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.label-link:hover { color: var(--ink); }
+/* Schmal: nur der farbige Punkt zeigt den Speicherstand, damit „Veröffentlichen“ Platz hat */
+@media (max-width: 560px) { .editor-top .status-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } }
+/* Ring-Dekoration liegt hinter dem Inhalt und nimmt keinen Platz im Layout ein */
+.auth-art .rings, .welcome .rings { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }

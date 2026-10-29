@@ -11,7 +11,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { ApiError } from './api';
 import { AppLayout } from './components/Layout';
 import { ToastProvider, useToast } from './lib/toast';
-import { Login, Register } from './pages/Auth';
+import { ForgotPassword, Login, Register, ResetPassword } from './pages/Auth';
 import { Discover } from './pages/Discover';
 import { Home } from './pages/Home';
 import { Drafts, Journal, Saved, Search } from './pages/Lists';
@@ -71,6 +71,8 @@ const router = createBrowserRouter([
   { path: '/schreiben/:id', element: writePage },
   { path: '/anmelden', element: <Login /> },
   { path: '/registrieren', element: <Register /> },
+  { path: '/passwort-vergessen', element: <ForgotPassword /> },
+  { path: '/passwort-neu', element: <ResetPassword /> },
 ]);
 
 function UpdatePrompt() {

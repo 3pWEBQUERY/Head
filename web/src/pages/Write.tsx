@@ -215,7 +215,7 @@ function Editor({ initialId, post }: { initialId: number | null; post: Post | nu
       <div className="editor-top">
         <div className="editor-top-in">
           <button type="button" className="icon-btn" aria-label="Zurück" onClick={async () => { if (status === 'dirty' && !published) await saveDraft(); history.length > 1 ? navigate(-1) : navigate('/'); }}><IBack /></button>
-          <span className="status" role="status"><i className={`dot${status === 'saving' || status === 'dirty' ? ' pending' : ''}${!online || status === 'error' ? ' off' : ''}`} />{statusText}</span>
+          <span className="status" role="status" title={statusText}><i className={`dot${status === 'saving' || status === 'dirty' ? ' pending' : ''}${!online || status === 'error' ? ' off' : ''}`} /><span className="status-text">{statusText}</span></span>
           <span className="grow" />
           <span className="hide-xs"><ThemeToggle /></span>
           <button type="button" className="icon-btn panel-toggle" aria-label="Einstellungen" onClick={() => setPanel(true)}><IGear /></button>

@@ -19,6 +19,8 @@ Fehler kommen immer als `{ "error": "Lesbare Meldung", "code": "maschinen_code" 
 - `POST /auth/logout`
 - `GET /auth/me` → `{ user | null }`
 - `POST /auth/password` `{ current, next }` (meldet andere Sitzungen ab)
+- `POST /auth/forgot` `{ email }` → immer `{ ok: true }`; schickt, falls es das Konto gibt, einen Link `/passwort-neu?token=…` (1 Stunde gültig, einmalig)
+- `POST /auth/reset` `{ token, password, native? }` → setzt das Passwort, meldet alle Geräte ab und meldet hier an
 - `GET /auth/export` → alle eigenen Daten als JSON
 - `DELETE /auth/account` `{ password }`
 - `PATCH /me` `{ name?, bio?, avatarKey? }`

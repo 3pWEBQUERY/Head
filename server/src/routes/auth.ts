@@ -1,8 +1,11 @@
 import type { FastifyInstance } from 'fastify';
+import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { LIMITS } from '../../../shared/constants.js';
+import { config } from '../config.js';
 import { one, q, tx } from '../db.js';
 import { badRequest, HttpError } from '../lib/errors.js';
+import { resetMail, sendMail } from '../lib/mail.js';
 import { mediaUrl } from '../lib/media-url.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { clearSessionCookie, createSession, destroySession, requireUser, setSessionCookie, type SessionUser } from '../lib/session.js';
@@ -14,6 +17,8 @@ const password = z.string().min(8, 'Mindestens 8 Zeichen').max(200);
 const email = z.string().trim().toLowerCase().email('Bitte eine gültige E-Mail-Adresse');
 
 const RESERVED = new Set(['admin', 'lapis', 'moderator', 'support', 'anonym', 'system', 'api', 'media', 'hilfe']);
+
+const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
 export function meJson(u: SessionUser) {
   return {
@@ -78,6 +83,44 @@ export default async function authRoutes(app: FastifyInstance) {
   });
 
   app.get('/api/auth/me', async (req) => ({ user: req.user ? meJson(req.user) : null }));
+
+  // Passwort vergessen: Antwortet immer gleich, damit niemand herausfindet, welche Adressen ein Konto haben.
+  app.post('/api/auth/forgot', { config: { rateLimit: { max: 5, timeWindow: '15 minutes' } } }, async (req) => {
+    const body = parse(z.object({ email }), req.body);
+    const user = await one<{ id: string; display_name: string; email: string }>('select id, display_name, email from users where email = $1', [body.email]);
+    if (user) {
+      const recent = await one('select count(*)::int as n from password_resets where user_id = $1 and created_at > now() - interval \'1 hour\'', [user.id]);
+      if (recent.n < 3) {
+        const token = randomBytes(32).toString('base64url');
+        await q('update password_resets set used_at = now() where user_id = $1 and used_at is null', [user.id]);
+        await q(`insert into password_resets (token_hash, user_id, expires_at) values ($1, $2, now() + interval '1 hour')`, [sha256(token), user.id]);
+        const link = `${config.publicUrl}/passwort-neu?token=${token}`;
+        // Nicht abwarten: sonst verrät die Antwortzeit, ob es das Konto gibt.
+        sendMail({ to: user.email, ...resetMail(user.display_name, link) }).catch((e) => req.log.error(e, 'Reset-Mail fehlgeschlagen'));
+      }
+    }
+    return { ok: true };
+  });
+
+  app.post('/api/auth/reset', strict, async (req, reply) => {
+    const body = parse(z.object({ token: z.string().min(20).max(200), password, native: z.boolean().optional() }), req.body);
+    const user = await tx(async (c) => {
+      const row = await one<{ user_id: string }>(
+        `update password_resets set used_at = now()
+          where token_hash = $1 and used_at is null and expires_at > now() returning user_id`,
+        [sha256(body.token)], c,
+      );
+      if (!row) throw badRequest('Dieser Link ist abgelaufen oder wurde schon benutzt. Fordere einfach einen neuen an.', 'reset_invalid');
+      await q('update users set password_hash = $2 where id = $1', [row.user_id, await hashPassword(body.password)], c);
+      // Überall abmelden – wer das alte Passwort kannte, fliegt raus.
+      await q('delete from sessions where user_id = $1', [row.user_id], c);
+      await q('update password_resets set used_at = now() where user_id = $1 and used_at is null', [row.user_id], c);
+      return one<SessionUser>('select id, handle, display_name, email, bio, avatar_key, role, created_at from users where id = $1', [row.user_id], c);
+    });
+    const token = await createSession(user!.id, req.headers['user-agent']);
+    setSessionCookie(reply, token);
+    return { user: meJson(user!), token: body.native ? token : undefined };
+  });
 
   app.post('/api/auth/password', strict, async (req) => {
     const me = requireUser(req);
