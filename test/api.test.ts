@@ -71,7 +71,10 @@ describe('Lapis API', () => {
     const followers = await call('POST', '/api/posts', { token: ana, body: { kind: 'gedanke', body: 'Nur für Leute, die mir folgen.', visibility: 'followers', publish: true } });
 
     // Erweiterte Stimmungen 1–16
-    assert.equal((await call('POST', '/api/posts', { token: ana, body: { kind: 'moment', body: 'Aufgeregt!', mood: 16, visibility: 'private', publish: true } })).status, 200);
+    const excited = await call('POST', '/api/posts', { token: ana, body: { kind: 'moment', body: 'Aufgeregt!', mood: 16, visibility: 'private', publish: true } });
+    assert.equal(excited.status, 200);
+    assert.equal((await call('GET', `/api/posts/${excited.json.id}`, { token: ana })).json.post.mood, 16);
+    await call('DELETE', `/api/posts/${excited.json.id}`, { token: ana });
     assert.equal((await call('POST', '/api/posts', { token: ana, body: { kind: 'moment', body: 'Zu viel', mood: 17, publish: true } })).status, 400);
     const empty = await call('POST', '/api/posts', { token: ana, body: { kind: 'moment', body: '   ', publish: true } });
     assert.equal(empty.json.code, 'empty');
