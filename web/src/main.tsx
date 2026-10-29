@@ -4,7 +4,7 @@ import '@fontsource-variable/literata';
 import '@fontsource-variable/literata/wght-italic.css';
 import './styles.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { StrictMode, useEffect } from 'react';
+import { lazy, StrictMode, Suspense, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { useRegisterSW } from 'virtual:pwa-register/react';
@@ -24,7 +24,11 @@ import { Rooms } from './pages/Rooms';
 import { Settings } from './pages/Settings';
 import { About, Imprint, NotFound, Privacy, Terms } from './pages/Static';
 import { Welcome } from './pages/Welcome';
-import { Write } from './pages/Write';
+import { Spinner } from './components/bits';
+
+// Der Editor (Tiptap/ProseMirror) wird erst beim Schreiben geladen.
+const Write = lazy(() => import('./pages/Write').then((m) => ({ default: m.Write })));
+const writePage = <Suspense fallback={<Spinner />}><Write /></Suspense>;
 
 const qc = new QueryClient({
   defaultOptions: {
@@ -63,8 +67,8 @@ const router = createBrowserRouter([
       { path: '*', element: <NotFound /> },
     ],
   },
-  { path: '/schreiben', element: <Write /> },
-  { path: '/schreiben/:id', element: <Write /> },
+  { path: '/schreiben', element: writePage },
+  { path: '/schreiben/:id', element: writePage },
   { path: '/anmelden', element: <Login /> },
   { path: '/registrieren', element: <Register /> },
 ]);

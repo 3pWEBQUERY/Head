@@ -29,7 +29,8 @@ function lines(s: string): ReactNode {
   ));
 }
 
-const TOKEN = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|_[^_\n]+_|https?:\/\/[^\s<]+[^\s<.,;:!?)\]"'»])/g;
+// Wie im Editor: Markierungen nur direkt am Wort („5 * 3 * 2“ bleibt Text), fett darf kursiv enthalten.
+const TOKEN = /(\*\*(?!\s)[^\n]+?(?<!\s)\*\*|\*(?!\s)[^*\n]+?(?<!\s)\*|(?<![\w])_(?!\s)[^_\n]+?(?<!\s)_(?![\w])|https?:\/\/[^\s<]+[^\s<.,;:!?)\]"'»])/g;
 
 export function inline(s: string): ReactNode[] {
   const out: ReactNode[] = [];
@@ -37,7 +38,7 @@ export function inline(s: string): ReactNode[] {
   for (const m of s.matchAll(TOKEN)) {
     const t = m[0];
     if (m.index! > last) out.push(s.slice(last, m.index));
-    if (t.startsWith('**')) out.push(<strong key={m.index}>{t.slice(2, -2)}</strong>);
+    if (t.startsWith('**')) out.push(<strong key={m.index}>{inline(t.slice(2, -2))}</strong>);
     else if (t.startsWith('*') || t.startsWith('_')) out.push(<em key={m.index}>{t.slice(1, -1)}</em>);
     else out.push(<a key={m.index} href={t} target="_blank" rel="noopener noreferrer nofollow ugc">{t.replace(/^https?:\/\/(www\.)?/, '')}</a>);
     last = m.index! + t.length;

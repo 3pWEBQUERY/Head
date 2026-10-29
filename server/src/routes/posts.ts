@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { countWords, KIND_KEYS, LIMITS, RESONANCE_KEYS } from '../../../shared/constants.js';
+import { countWords, KIND_KEYS, LIMITS, MOOD_MAX, RESONANCE_KEYS } from '../../../shared/constants.js';
 import { dayKey } from '../../../shared/prompts.js';
 import { one, q, tx } from '../db.js';
 import { badRequest, forbidden, notFound } from '../lib/errors.js';
@@ -30,7 +30,7 @@ const postInput = z.object({
   kind: z.enum(KIND_KEYS as [string, ...string[]]),
   title: z.string().trim().max(LIMITS.title).default(''),
   body: z.string().max(LIMITS.body).default(''),
-  mood: z.number().int().min(1).max(5).nullable().optional(),
+  mood: z.number().int().min(1).max(MOOD_MAX).nullable().optional(),
   visibility: z.enum(['public', 'followers', 'private']).default('public'),
   anonymous: z.boolean().default(false),
   contentWarning: z.string().trim().max(LIMITS.contentWarning).nullable().optional(),
