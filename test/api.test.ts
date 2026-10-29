@@ -201,6 +201,9 @@ describe('Lapis API', () => {
     const rooms = await call('GET', '/api/rooms', { token: ana });
     assert.ok(rooms.json.rooms.length >= 8);
     assert.equal(rooms.json.rooms.find((r: any) => r.slug === 'heute').joined, true);
+    // Raumkarten zeigen den neuesten Text – aber nie einen mit Inhaltshinweis.
+    assert.ok(rooms.json.rooms.find((r: any) => r.slug === 'heute').latest.id > 0);
+    assert.ok(rooms.json.rooms.every((r: any) => !r.latest || !/Regen passt/.test(r.latest.excerpt)));
     const created = await call('POST', '/api/rooms', { token: ben, body: { name: 'Nachtschicht Gedanken', description: 'Für alle, die nachts schreiben.' } });
     assert.equal(created.json.slug, 'nachtschicht-gedanken');
     await call('PUT', '/api/rooms/lyrik/membership', { token: ana });

@@ -13,7 +13,18 @@ const ROOM_COLUMNS = `
   (select count(*)::int from posts p where p.room_id = r.id and p.status = 'published' and p.visibility = 'public'
       and p.published_at > now() - interval '7 days') as posts_week,
   (select count(*)::int from posts p where p.room_id = r.id and p.status = 'published' and p.visibility = 'public') as posts_total,
-  exists (select 1 from room_members m where m.room_id = r.id and m.user_id = $1) as joined
+  exists (select 1 from room_members m where m.room_id = r.id and m.user_id = $1) as joined,
+  lp.id as latest_id, lp.title as latest_title, lp.excerpt as latest_excerpt, lp.kind as latest_kind, lp.published_at as latest_at
+`;
+
+// Vorschau auf den neuesten öffentlichen Text – ohne Texte mit Inhaltshinweis.
+const ROOM_FROM = `
+  rooms r
+  left join lateral (
+    select p.id, p.title, left(p.body, 180) as excerpt, p.kind, p.published_at from posts p
+     where p.room_id = r.id and p.status = 'published' and p.visibility = 'public' and p.content_warning is null
+     order by p.published_at desc limit 1
+  ) lp on true
 `;
 
 function roomJson(r: any) {
@@ -21,6 +32,9 @@ function roomJson(r: any) {
     slug: r.slug, name: r.name, description: r.description, color: r.color, guidelines: r.guidelines,
     official: r.official, createdAt: r.created_at, joined: r.joined,
     stats: { members: r.members, newMembers: r.new_members, postsWeek: r.posts_week, posts: r.posts_total },
+    latest: r.latest_id
+      ? { id: r.latest_id, title: r.latest_title, excerpt: r.latest_excerpt, kind: r.latest_kind, publishedAt: r.latest_at }
+      : null,
   };
 }
 
@@ -33,13 +47,13 @@ function slugify(s: string) {
 
 export default async function roomRoutes(app: FastifyInstance) {
   app.get('/api/rooms', async (req) => {
-    const rows = await q(`select ${ROOM_COLUMNS} from rooms r order by r.official desc, members desc, r.name`, [req.user?.id ?? null]);
+    const rows = await q(`select ${ROOM_COLUMNS} from ${ROOM_FROM} order by r.official desc, members desc, r.name`, [req.user?.id ?? null]);
     return { rooms: rows.map(roomJson) };
   });
 
   app.get('/api/rooms/:slug', async (req) => {
     const { slug } = parse(z.object({ slug: z.string().max(40) }), req.params);
-    const r = await one(`select ${ROOM_COLUMNS} from rooms r where r.slug = $2`, [req.user?.id ?? null, slug]);
+    const r = await one(`select ${ROOM_COLUMNS} from ${ROOM_FROM} where r.slug = $2`, [req.user?.id ?? null, slug]);
     if (!r) throw notFound('Diesen Raum gibt es nicht');
     return { room: roomJson(r) };
   });

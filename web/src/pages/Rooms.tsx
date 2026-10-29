@@ -6,7 +6,7 @@ import { Dialog, Skeletons } from '../components/bits';
 import { IPlus } from '../components/Icons';
 import { Shell } from '../components/Layout';
 import { useMe, useRooms } from '../lib/queries';
-import { RoomCard } from './Discover';
+import { RoomCard } from '../components/RoomCards';
 
 const COLORS = ['#213885', '#5F3475', '#893172', '#4A68C2', '#7A5A3C', '#B0567E', '#1B3075', '#9A8C7A'];
 

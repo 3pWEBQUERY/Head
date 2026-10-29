@@ -3,7 +3,7 @@ import { ThemeToggle } from '../components/bits';
 import { Shell } from '../components/Layout';
 import { InstallCard } from '../components/Sidebar';
 import { useMe, useRooms } from '../lib/queries';
-import { RoomCard } from './Discover';
+import { RoomCard } from '../components/RoomCards';
 
 export function Welcome() {
   const { me } = useMe();

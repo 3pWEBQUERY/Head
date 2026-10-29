@@ -59,6 +59,7 @@ export type Room = RoomRef & {
   createdAt: string;
   joined: boolean;
   stats: { members: number; newMembers: number; postsWeek: number; posts: number };
+  latest: { id: number; title: string; excerpt: string; kind: Kind; publishedAt: string } | null;
 };
 
 export type Profile = Person & {
